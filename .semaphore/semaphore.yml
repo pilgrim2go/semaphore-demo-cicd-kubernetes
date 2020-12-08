@@ -63,7 +63,6 @@ blocks:
             - 'docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest'
             - 'docker push $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest'
             - 'docker push $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
-
 promotions:
   - name: Canary Deployment (GCP)
     pipeline_file: deploy-canary-gcp.yml
