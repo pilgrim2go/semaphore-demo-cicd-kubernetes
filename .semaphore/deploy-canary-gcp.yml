@@ -38,7 +38,7 @@ blocks:
           - docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID
 
           # Login to Google private registry using the json key in the gcp-key secret
-          - gcloud auth activate-service-account --key-file=gcp-key.json
+          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
@@ -70,7 +70,7 @@ blocks:
       prologue:
         commands:
           # Authenticate using the file injected from the secret
-          - gcloud auth activate-service-account --key-file=gcp-key.json
+          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
@@ -118,7 +118,7 @@ blocks:
       prologue:
         commands:
           # Authenticate using the file injected from the secret
-          - gcloud auth activate-service-account --key-file=gcp-key.json
+          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
 
           # Don't forget -q to silence confirmation prompts
           - gcloud auth configure-docker -q
