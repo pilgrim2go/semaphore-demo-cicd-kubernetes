@@ -35,17 +35,18 @@ blocks:
           # Pull image from Semaphore private registry
           - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
 
-          - docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID
+          - docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest
 
           # Login to Google private registry using the json key in the gcp-key secret
-          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          - gcloud auth activate-service-account --key-file=gcp-key.json
+          
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
 
           # Upload image to cloud registry
-          - docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID
-          - docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID
+          - docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest
+          - docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest
 
   - name: Canary Deployment
     task:
@@ -70,7 +71,8 @@ blocks:
       prologue:
         commands:
           # Authenticate using the file injected from the secret
-          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          - gcloud auth activate-service-account --key-file=gcp-key.json
+          
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
@@ -118,7 +120,7 @@ blocks:
       prologue:
         commands:
           # Authenticate using the file injected from the secret
-          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          - gcloud auth activate-service-account --key-file=gcp-key.json
 
           # Don't forget -q to silence confirmation prompts
           - gcloud auth configure-docker -q
