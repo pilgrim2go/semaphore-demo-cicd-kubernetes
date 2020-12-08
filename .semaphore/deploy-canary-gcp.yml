@@ -21,13 +21,13 @@ blocks:
         - name: Push
           commands:
             - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
-            - 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest'
+            - 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:SEMAPHORE_WORKFLOW_ID'
             - gcloud auth activate-service-account --key-file=gcp-key.json
             - gcloud auth configure-docker -q
             - gcloud config set project $GCP_PROJECT_ID
             - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
-            - 'docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest'
-            - 'docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest'
+            - 'docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:SEMAPHORE_WORKFLOW_ID gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:SEMAPHORE_WORKFLOW_ID'
+            - 'docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:SEMAPHORE_WORKFLOW_ID'
   - name: Canary Deployment
     task:
       secrets:
