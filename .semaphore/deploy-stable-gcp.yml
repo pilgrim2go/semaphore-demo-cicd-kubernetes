@@ -1,25 +1,48 @@
 version: v1.0
-name: Stable Deployment (Google Cloud)
+name: Canary Deployment (Google Cloud)
 agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu1804
 blocks:
-  - name: Stable Deployment
+  - name: Push to Registry
+    task:
+      secrets:
+        - name: dockerhub-secrets
+        - name: gcp-key
+      env_vars:
+        - name: GCP_PROJECT_ID
+          value: semaphore-demo-cicd-kubernetes
+        - name: GCP_PROJECT_DEFAULT_ZONE
+          value: asia-southeast1-c
+        - name: SEMAPHORE_REGISTRY_URL
+          value: pilgrim2go
+      jobs:
+        - name: Push
+          commands:
+            - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
+            - 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
+            - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+            - gcloud auth configure-docker -q
+            - gcloud config set project $GCP_PROJECT_ID
+            - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
+            - 'docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
+            - 'docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
+  - name: Canary Deployment
     task:
       secrets:
         - name: gcp-key
         - name: db-params
       env_vars:
-        - name: CLUSTER_NAME
-          value: semaphore-demo-cicd-kubernetes
         - name: GCP_PROJECT_ID
           value: semaphore-demo-cicd-kubernetes
+        - name: CLUSTER_NAME
+          value: semaphore-demo-cicd-kubernetes
         - name: GCP_PROJECT_DEFAULT_ZONE
-          value: YOUR_GCP_ZONE
+          value: asia-southeast1-c
       prologue:
         commands:
-          - gcloud auth activate-service-account --key-file=gcp-key.json
+          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
@@ -30,5 +53,36 @@ blocks:
           commands:
             - kubectl get nodes
             - kubectl get pods
-            - './apply.sh manifests/deployment.yml addressbook-stable 3 "gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID"'
-            - if kubectl get deployment addressbook-canary; then kubectl delete deployment/addressbook-canary; fi
+            - kubectl apply -f manifests/service.yml
+            - './apply.sh manifests/deployment.yml addressbook-canary 1 "gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID"'
+            - if kubectl get deployment addressbook-stable; then kubectl scale --replicas=2 deployment/addressbook-stable; fi
+  - name: Functional test and migration
+    task:
+      secrets:
+        - name: gcp-key
+      env_vars:
+        - name: GCP_PROJECT_ID
+          value: semaphore-demo-cicd-kubernetes
+        - name: CLUSTER_NAME
+          value: semaphore-demo-cicd-kubernetes
+        - name: GCP_PROJECT_DEFAULT_ZONE
+          value: asia-southeast1-c
+      prologue:
+        commands:
+          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          - gcloud auth configure-docker -q
+          - gcloud config set project $GCP_PROJECT_ID
+          - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
+          - gcloud container clusters get-credentials $CLUSTER_NAME --zone $GCP_PROJECT_DEFAULT_ZONE --project $GCP_PROJECT_ID
+      jobs:
+        - name: Test and migrate db
+          commands:
+            - kubectl exec -it $(kubectl get pod -l deployment=addressbook-canary -o name | head -n 1) -- npm run ping
+            - kubectl exec -it $(kubectl get pod -l deployment=addressbook-canary -o name | head -n 1) -- npm run migrate
+promotions:
+  - name: Stable Deployment
+    pipeline_file: deploy-stable-gcp.yml
+  - name: Rollback Canary
+    pipeline_file: rollback-canary-gcp.yml
+    auto_promote:
+      when: result = 'failed'
