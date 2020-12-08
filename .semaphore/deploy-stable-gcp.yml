@@ -21,13 +21,17 @@ blocks:
         - name: Push
           commands:
             - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
-            - 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
-            - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+            #- 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
+            - 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest'
+            
+            #- gcloud auth activate-service-account --key-file=.secrets.gcp.json
+	          - gcloud auth activate-service-account --key-file=gcp-key.json
+            
             - gcloud auth configure-docker -q
             - gcloud config set project $GCP_PROJECT_ID
             - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
-            - 'docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
-            - 'docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
+            - 'docker tag $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest'
+            - 'docker push gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest'
   - name: Canary Deployment
     task:
       secrets:
@@ -42,7 +46,9 @@ blocks:
           value: asia-southeast1-c
       prologue:
         commands:
-          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          #- gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          - gcloud auth activate-service-account --key-file=gcp-key.json
+          
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
@@ -54,7 +60,7 @@ blocks:
             - kubectl get nodes
             - kubectl get pods
             - kubectl apply -f manifests/service.yml
-            - './apply.sh manifests/deployment.yml addressbook-canary 1 "gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID"'
+            - './apply.sh manifests/deployment.yml addressbook-canary 1 "gcr.io/$GCP_PROJECT_ID/semaphore-demo-cicd-kubernetes:latest"'
             - if kubectl get deployment addressbook-stable; then kubectl scale --replicas=2 deployment/addressbook-stable; fi
   - name: Functional test and migration
     task:
@@ -69,7 +75,9 @@ blocks:
           value: asia-southeast1-c
       prologue:
         commands:
-          - gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          #- gcloud auth activate-service-account --key-file=.secrets.gcp.json
+          - gcloud auth activate-service-account --key-file=gcp-key.json
+          
           - gcloud auth configure-docker -q
           - gcloud config set project $GCP_PROJECT_ID
           - gcloud config set compute/zone $GCP_PROJECT_DEFAULT_ZONE
