@@ -35,7 +35,7 @@ blocks:
         - name: db-params
       env_vars:
         - name: GCP_PROJECT_ID
-          value: semaphore-demo-cicd-kubernetes
+          value: swift-climate-296603
         - name: CLUSTER_NAME
           value: semaphore-demo-cicd-kubernetes
         - name: GCP_PROJECT_DEFAULT_ZONE
