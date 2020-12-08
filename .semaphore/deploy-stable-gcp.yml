@@ -21,10 +21,8 @@ blocks:
         - name: Push
           commands:
             - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
-            #- 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:$SEMAPHORE_WORKFLOW_ID'
             - 'docker pull $SEMAPHORE_REGISTRY_URL/semaphore-demo-cicd-kubernetes:latest'
             
-            #- gcloud auth activate-service-account --key-file=.secrets.gcp.json
 	          - gcloud auth activate-service-account --key-file=gcp-key.json
             
             - gcloud auth configure-docker -q
@@ -46,7 +44,6 @@ blocks:
           value: asia-southeast1-c
       prologue:
         commands:
-          #- gcloud auth activate-service-account --key-file=.secrets.gcp.json
           - gcloud auth activate-service-account --key-file=gcp-key.json
           
           - gcloud auth configure-docker -q
